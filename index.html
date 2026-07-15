@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinalComic — 漫画格式转换工具</title>
+<link rel="icon" type="image/png" href="icon/icon.png">
+<style>
+/* ============================================
+   RETROUI Design System
+   ============================================ */
+:root {
+  --black:   #000;
+  --white:   #fff;
+  --yellow:  #FFD700;
+  --yellow2: #E6C200;
+  --bg:      #FDF6E3;
+  --grid:    rgba(0,0,0,.12);
+  --muted:   #666;
+  --bw:      3px;
+  --shadow:  5px;
+  --font:    'Segoe UI','Microsoft YaHei',sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  min-height:100vh;
+  display:flex;justify-content:center;align-items:flex-start;
+  padding:32px 0;
+  color:var(--black);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── 主面板 ── */
+.panel{
+  width:700px;flex-shrink:0;
+  background:var(--white);
+  border:var(--bw) solid var(--black);
+  box-shadow:var(--shadow) var(--shadow) 0 var(--black);
+  padding:32px 28px 24px;
+  position:relative;
+}
+/* ── 侧边栏（打赏 + 下载）── */
+.sidebar{
+  position:sticky;top:120px;
+  width:250px;flex-shrink:0;
+  display:flex;flex-direction:column;gap:16px;
+}
+/* ── 页面左右居中布局 ── */
+.page-layout{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:32px;
+  margin-left:141px;
+}
+/* ── 右上角装饰图标 ── */
+.badge-decor{
+  position:absolute;top:-20px;right:-20px;
+  width:48px;height:48px;
+  background:var(--yellow);
+  border:var(--bw) solid var(--black);
+  box-shadow:3px 3px 0 var(--black);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:bold;
+  transform:rotate(0deg);
+}
+
+h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
+.subtitle{font-size:13px;color:var(--muted);margin-bottom:24px}
+
+/* ── 区块卡片 ── */
+.section{
+  background:var(--white);
+  border:var(--bw) solid var(--black);
+  box-shadow:4px 4px 0 var(--black);
+  padding:18px 20px;
+  margin-bottom:16px;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.section:hover{
+  transform:translateY(-3px);
+  box-shadow:7px 7px 0 var(--black);
+}
+
+.section-title{
+  font-size:15px;font-weight:800;
+  text-transform:uppercase;
+  margin-bottom:12px;
+  letter-spacing:0.5px;
+}
+
+/* ── 路径输入行 ── */
+.path-row{display:flex;gap:10px}
+.path-row input{
+  flex:1;
+  padding:10px 12px;
+  font-size:14px;font-family:var(--font);
+  border:var(--bw) solid var(--black);
+  background:var(--white);
+  outline:none;
+}
+.path-row input:focus{background:#FFFDE8}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 20px;
+  font-size:14px;font-weight:800;font-family:var(--font);
+  border:var(--bw) solid var(--black);
+  background:var(--white);
+  box-shadow:3px 3px 0 var(--black);
+  cursor:pointer;
+  transition:all .08s ease;
+  white-space:nowrap;
+  user-select:none;
+}
+.btn:hover{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--black)}
+.btn:active{transform:translate(3px,3px);box-shadow:none}
+.btn-yellow{background:var(--yellow)}
+.btn-black{background:var(--black);color:var(--white)}
+.btn-big{
+  width:100%;
+  padding:20px 24px;
+  font-size:20px;letter-spacing:1px;
+  text-transform:uppercase;
+  box-shadow:5px 5px 0 var(--black);
+  margin-top:4px;
+}
+
+/* ── 复选框 (Thick borders 风格) ── */
+.check-row{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 0;cursor:pointer;
+  user-select:none;
+}
+.checkbox{
+  width:22px;height:22px;min-width:22px;
+  border:var(--bw) solid var(--black);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .1s;
+  font-size:16px;font-weight:900;line-height:1;
+}
+.checkbox.checked{background:var(--yellow)}
+.check-label{font-size:15px;font-weight:700}
+.check-desc{font-size:12px;color:var(--muted);margin-left:auto}
+
+/* ── Toggle 开关 (Dark mode 风格) ── */
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:4px 0;
+}
+.toggle-label{font-size:15px;font-weight:700}
+.toggle-track{
+  width:54px;height:28px;min-width:54px;
+  border:var(--bw) solid var(--black);
+  background:var(--white);
+  position:relative;cursor:pointer;
+}
+.toggle-thumb{
+  width:22px;height:20px;
+  background:var(--yellow);
+  border:2px solid var(--black);
+  position:absolute;top:1px;left:2px;
+  transition:left .12s ease;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-weight:900;
+}
+.toggle-thumb.on{left:28px}
+.toggle-status{
+  font-size:12px;font-weight:800;
+  min-width:32px;text-align:right;
+}
+
+/* ── 标签 Toggle (RTL 按钮风格) ── */
+.tag-row{
+  display:flex;align-items:center;gap:12px;
+  padding:4px 0;
+}
+.tag-row .tag-label{font-size:15px;font-weight:700}
+.tag-group{display:flex;gap:0}
+.tag-btn{
+  padding:6px 16px;
+  font-size:14px;font-weight:800;font-family:var(--font);
+  border:var(--bw) solid var(--black);
+  cursor:pointer;user-select:none;
+  background:var(--white);
+  transition:all .08s;
+}
+.tag-btn:first-of-type{border-right:2px solid var(--black)}
+.tag-btn.active{background:var(--yellow)}
+.tag-btn:not(.active):hover{background:#FFF7CC}
+
+/* ── 进度条 (Chaos level 风格) ── */
+.progress-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:8px;
+}
+.progress-title{font-size:15px;font-weight:800;text-transform:uppercase}
+.progress-pct{font-size:15px;font-weight:800}
+
+.slider-track{
+  width:100%;height:30px;
+  border:var(--bw) solid var(--black);
+  background:var(--white);
+  position:relative;overflow:hidden;
+}
+.slider-fill{
+  height:100%;
+  background:var(--yellow);
+  transition:width .3s ease;
+  width:0%;
+}
+.slider-thumb{
+  width:22px;height:22px;
+  background:var(--white);
+  border:var(--bw) solid var(--black);
+  position:absolute;top:1px;left:0;
+  transition:left .3s ease;
+}
+
+/* ── 状态文字 ── */
+.status-text{
+  text-align:center;
+  font-size:14px;font-weight:700;
+  color:var(--muted);
+  padding:6px 0;
+  min-height:28px;
+}
+.status-text.ok{color:#1a8a1a}
+
+/* ── 侧边栏卡片 (打赏 + 下载) ── */
+.side-card{
+  background:var(--white);
+  border:var(--bw) solid var(--black);
+  box-shadow:4px 4px 0 var(--black);
+  padding:16px;
+  text-align:center;
+  font-size:13px;
+  line-height:1.6;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.side-card:hover{
+  transform:translateY(-3px);
+  box-shadow:7px 7px 0 var(--black);
+}
+.side-card p{
+  margin:0 0 10px 0;
+  font-weight:700;
+  font-size:13px;
+  color:var(--black);
+}
+.side-card .qr-row{
+  display:flex;gap:10px;justify-content:center;
+}
+.side-card .qr-row img{
+  width:100px;height:100px;
+  border:2px solid var(--black);
+  object-fit:contain;
+  background:#fff;
+}
+.side-card .qr-label{
+  font-size:11px;font-weight:700;margin-top:4px;color:var(--muted);
+}
+.side-card .btn{display:block;margin-top:8px}
+
+/* ── 响应式 ── */
+@media(max-width:560px){
+  .panel{padding:20px 14px 16px}
+  .path-row{flex-direction:column}
+  .btn-big{font-size:16px}
+  .badge-decor{top:-14px;right:-14px;width:36px;height:36px;font-size:16px}
+}
+@media(max-width:960px){
+  .sidebar{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="page-layout">
+
+<div class="panel">
+
+  <!-- 右上角装饰 -->
+  <div class="badge-decor" title="RetroUI">FC</div>
+
+  <!-- 标题 -->
+  <h1>FinalComic</h1>
+  <p class="subtitle">漫画格式转换工具</p>
+
+  <!-- 路径输入 -->
+  <div class="section">
+    <div class="section-title">[+] 输入文件夹路径</div>
+    <div class="path-row">
+      <input type="text" id="folderPath" placeholder="粘贴或选择包含 .epub 文件的文件夹...">
+      <button class="btn" id="btnBrowse" onclick="browseFolder()">浏览</button>
+    </div>
+  </div>
+
+  <!-- 勾选输出格式 -->
+  <div class="section">
+    <div class="section-title">勾选输出的格式</div>
+
+    <div class="check-row">
+      <div class="checkbox" style="pointer-events:none;background:var(--white) !important">&#x2715;</div>
+      <span class="check-label" style="opacity:0.35">EPUB</span>
+      <span class="check-desc" style="color:#999">源格式，自动包含</span>
+    </div>
+
+    <div class="check-row" onclick="toggleFmt('pdf',this)">
+      <div class="checkbox checked" id="chk_pdf">&#10003;</div>
+      <span class="check-label">PDF</span>
+      <span class="check-desc">自动切边 + 画质增强</span>
+    </div>
+
+    <div class="check-row" onclick="toggleFmt('mobi',this)">
+      <div class="checkbox checked" id="chk_mobi">&#10003;</div>
+      <span class="check-label">MOBI</span>
+      <span class="check-desc">Kindle 经典格式</span>
+    </div>
+
+    <div class="check-row" onclick="toggleFmt('kfx',this)">
+      <div class="checkbox checked" id="chk_kfx">&#10003;</div>
+      <span class="check-label">KFX</span>
+      <span class="check-desc">Kindle 最新格式 &middot; 固定版式</span>
+    </div>
+  </div>
+
+  <!-- 设置选项 -->
+  <div class="section">
+    <div class="section-title">设置选项</div>
+
+    <!-- 翻页方向 — RTL tag 按钮风格 -->
+    <div class="tag-row" style="margin-bottom:10px">
+      <span class="tag-label">翻页方向</span>
+      <div class="tag-group">
+        <button class="tag-btn active" id="tag_ltr" onclick="setRTL(false)">LTR</button>
+        <button class="tag-btn" id="tag_rtl" onclick="setRTL(true)">RTL</button>
+      </div>
+    </div>
+
+    <!-- 墨色加深 — Dark mode toggle 风格 -->
+    <div class="toggle-row">
+      <span class="toggle-label">墨色加深 <span style="font-size:12px;color:var(--muted);font-weight:400">(KFX 有效)</span></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="toggle-status" id="boostStatus">ON</span>
+        <div class="toggle-track" id="boostToggle" onclick="toggleBoost()">
+          <div class="toggle-thumb on" id="boostThumb">ON</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 进度条 (Chaos level 风格) -->
+  <div class="section">
+    <div class="progress-header">
+      <span class="progress-title">转换进度</span>
+      <span class="progress-pct" id="pctText">0%</span>
+    </div>
+    <div class="slider-track">
+      <div class="slider-fill" id="sliderFill"></div>
+      <div class="slider-thumb" id="sliderThumb"></div>
+    </div>
+    <div class="status-text" id="statusMsg">准备就绪，选择文件夹开始转换。</div>
+  </div>
+
+  <!-- 主按钮 -->
+  <button class="btn btn-yellow btn-big" id="btnStart" onclick="startConvert()">
+    [&gt;&gt;] 开始转换
+  </button>
+
+</div><!-- end .panel -->
+
+  <!-- 侧边栏 -->
+  <div class="sidebar">
+
+    <!-- 下载入口 -->
+    <div class="side-card">
+      <p>首次使用需要下载一个小程序<br>点下方按钮下载</p>
+      <a class="btn btn-yellow" href="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/FinalComic.exe" target="_blank" style="text-decoration:none">
+        下载引擎 (Windows)
+      </a>
+    </div>
+
+    <!-- 打赏 -->
+    <div class="side-card">
+      <p>网站完全免费，如果您觉得恰好对您有所帮助，可以扫码支持一下~</p>
+      <p>谢谢！</p>
+      <div class="qr-row">
+        <div>
+          <img src="pay/vx.jpg" alt="微信打赏">
+          <div class="qr-label">微信</div>
+        </div>
+        <div>
+          <img src="pay/zfb.jpg" alt="支付宝打赏">
+          <div class="qr-label">支付宝</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- end .page-layout -->
+
+<script>
+// ═══════════════════════════════════════════
+// 引擎地址 — GitHub Pages 部署时改为本地地址
+// ═══════════════════════════════════════════
+const ENGINE = 'http://127.0.0.1:15900';
+
+// ═══════════════════════════════════════════
+// 状态管理
+// ═══════════════════════════════════════════
+
+let state = {
+  folder: '',
+  formats: { pdf: true, mobi: true, kfx: true },
+  rtl: false,
+  boost: true,
+  running: false,
+  taskId: null,
+  sseSource: null,
+};
+
+// ═══════════════════════════════════════════
+// 复选框 toggle
+// ═══════════════════════════════════════════
+
+function toggleFmt(key, row){
+  if(state.running) return;
+  state.formats[key] = !state.formats[key];
+  const cb = row.querySelector('.checkbox');
+  if(state.formats[key]){
+    cb.classList.add('checked');
+    cb.innerHTML = '&#10003;';
+  }else{
+    cb.classList.remove('checked');
+    cb.innerHTML = '';
+  }
+}
+
+// ═══════════════════════════════════════════
+// RTL 标签切换
+// ═══════════════════════════════════════════
+
+function setRTL(val){
+  if(state.running) return;
+  state.rtl = val;
+  document.getElementById('tag_ltr').classList.toggle('active', !val);
+  document.getElementById('tag_rtl').classList.toggle('active', val);
+}
+
+// ═══════════════════════════════════════════
+// Dark mode 风格 Boost Toggle
+// ═══════════════════════════════════════════
+
+function toggleBoost(){
+  if(state.running) return;
+  state.boost = !state.boost;
+  const thumb = document.getElementById('boostThumb');
+  const status = document.getElementById('boostStatus');
+  if(state.boost){
+    thumb.classList.add('on');
+    thumb.textContent = 'ON';
+    status.textContent = 'ON';
+  }else{
+    thumb.classList.remove('on');
+    thumb.textContent = 'OFF';
+    status.textContent = 'OFF';
+  }
+}
+
+// ═══════════════════════════════════════════
+// 浏览文件夹
+// ═══════════════════════════════════════════
+
+function browseFolder(){
+  fetch(ENGINE + '/api/browse')
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.path) document.getElementById('folderPath').value = d.path;
+    });
+}
+
+// ═══════════════════════════════════════════
+// 开始 / 取消转换
+// ═══════════════════════════════════════════
+
+function startConvert(){
+  if(state.running){ cancelConvert(); return; }
+
+  const path = document.getElementById('folderPath').value.trim();
+  if(!path){ alert('请先选择包含 EPUB 文件的文件夹。'); return; }
+
+  const selected = ['epub'];
+  if(state.formats.pdf) selected.push('pdf');
+  if(state.formats.mobi) selected.push('mobi');
+  if(state.formats.kfx) selected.push('kfx');
+  if(selected.length <= 1){ alert('请至少选择一种输出格式。'); return; }
+
+  state.running = true;
+  state.folder = path;
+  updateUI();
+
+  fetch(ENGINE + '/api/start',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      folder: path,
+      formats: state.formats,
+      rtl: state.rtl,
+      boost: state.boost,
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){ stop(d.error); return; }
+    state.taskId = d.task_id;
+    connectSSE(d.task_id);
+  })
+  .catch(e=>stop('启动失败: '+e.message));
+}
+
+function cancelConvert(){
+  if(!state.taskId) return;
+  fetch(ENGINE + '/api/cancel/'+state.taskId,{method:'POST'})
+    .then(()=>{
+      if(state.sseSource) state.sseSource.close();
+      stop('已取消');
+    });
+}
+
+// ═══════════════════════════════════════════
+// SSE 进度推送
+// ═══════════════════════════════════════════
+
+function connectSSE(taskId){
+  if(state.sseSource) state.sseSource.close();
+  const es = new EventSource(ENGINE + '/api/progress/'+taskId);
+  state.sseSource = es;
+
+  es.addEventListener('progress', function(e){
+    const d = JSON.parse(e.data);
+    setProgress(d.pct, d.text);
+    if(d.pct >= 100) stop(d.text, true);
+  });
+
+  es.addEventListener('done', function(e){
+    stop(e.data, true);
+  });
+
+  es.onerror = function(e){
+    if(!state.running) es.close();
+  };
+}
+
+// ═══════════════════════════════════════════
+// 进度条更新
+// ═══════════════════════════════════════════
+
+function setProgress(pct, text){
+  pct = Math.max(0, Math.min(100, pct));
+  const track = document.querySelector('.slider-track');
+  const tw = track.clientWidth - 4;
+  const fill = document.getElementById('sliderFill');
+  const thumb = document.getElementById('sliderThumb');
+  const textEl = document.getElementById('pctText');
+  const msg = document.getElementById('statusMsg');
+
+  fill.style.width = pct+'%';
+  const tx = (tw * pct/100) - (pct>98?22:0);
+  thumb.style.left = Math.max(0, tx)+'px';
+  textEl.textContent = pct+'%';
+  msg.textContent = text;
+  if(pct >= 100) msg.classList.add('ok');
+}
+
+// ═══════════════════════════════════════════
+// 停止 / 完成
+// ═══════════════════════════════════════════
+
+function stop(msg, ok){
+  state.running = false;
+  state.taskId = null;
+  if(state.sseSource){ state.sseSource.close(); state.sseSource = null; }
+  if(msg) document.getElementById('statusMsg').textContent = msg;
+  updateUI();
+}
+
+// ═══════════════════════════════════════════
+// UI 状态同步
+// ═══════════════════════════════════════════
+
+function updateUI(){
+  const btn = document.getElementById('btnStart');
+  const browse = document.getElementById('btnBrowse');
+  const input = document.getElementById('folderPath');
+
+  if(state.running){
+    btn.textContent = '[x] 取消转换';
+    btn.classList.remove('btn-yellow');
+    btn.classList.add('btn-black');
+    browse.disabled = true;
+    input.disabled = true;
+    browse.style.opacity = '0.5';
+    input.style.opacity = '0.5';
+  }else{
+    btn.textContent = '[>>] 开始转换';
+    btn.classList.add('btn-yellow');
+    btn.classList.remove('btn-black');
+    browse.disabled = false;
+    input.disabled = false;
+    browse.style.opacity = '1';
+    input.style.opacity = '1';
+  }
+}
+</script>
+</body>
+</html>
