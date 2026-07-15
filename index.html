@@ -383,7 +383,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
     <!-- 下载入口 -->
     <div class="side-card">
       <p>首次使用需要下载一个转换引擎<br>点下方按钮下载</p>
-      <a class="btn btn-yellow" href="https://links.8uid.com/d/b40903bee55cbe94cca6b6676ac18d61" target="_blank" style="text-decoration:none">
+      <a class="btn btn-yellow" href="https://github.com/Loneislet/finalcomic/releases/latest/download/FinalComic.exe" target="_blank" style="text-decoration:none">
         下载引擎 (Windows)
       </a>
     </div>
@@ -538,7 +538,6 @@ function startConvert(){
       connectSSE(d.task_id);
     })
     .catch(e=>stop('启动失败: '+e.message));
-  });
 }
 
 function cancelConvert(){
