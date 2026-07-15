@@ -382,7 +382,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
 
     <!-- 下载入口 -->
     <div class="side-card">
-      <p>首次使用需要下载一个小程序<br>点下方按钮下载</p>
+      <p>首次使用需要下载一个转换引擎<br>点下方按钮下载</p>
       <a class="btn btn-yellow" href="https://github.com/Loneislet/finalcomic/releases/latest/download/FinalComic.exe" target="_blank" style="text-decoration:none">
         下载引擎 (Windows)
       </a>
@@ -410,9 +410,39 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
 
 <script>
 // ═══════════════════════════════════════════
-// 引擎地址 — GitHub Pages 部署时改为本地地址
+// 引擎地址
 // ═══════════════════════════════════════════
 const ENGINE = 'http://127.0.0.1:15900';
+
+// ═══════════════════════════════════════════
+// 引擎检测 + 提示弹窗
+// ═══════════════════════════════════════════
+
+function checkEngine(){
+  return fetch(ENGINE + '/api/ping', {cache:'no-store'})
+    .then(r=>r.json())
+    .then(d=>d.ok)
+    .catch(()=>false);
+}
+
+function showEngineModal(){
+  document.getElementById('engineOverlay').style.display='flex';
+}
+
+function closeEngineModal(){
+  document.getElementById('engineOverlay').style.display='none';
+}
+
+function retryEngine(){
+  document.getElementById('engineRetryBtn').textContent='检测中...';
+  document.getElementById('engineRetryBtn').disabled=true;
+  checkEngine().then(ok=>{
+    document.getElementById('engineRetryBtn').textContent='重试';
+    document.getElementById('engineRetryBtn').disabled=false;
+    if(ok) closeEngineModal();
+    else alert('引擎仍未响应，请确认 FinalComic.exe 已经启动。');
+  });
+}
 
 // ═══════════════════════════════════════════
 // 状态管理
@@ -481,11 +511,14 @@ function toggleBoost(){
 // ═══════════════════════════════════════════
 
 function browseFolder(){
-  fetch(ENGINE + '/api/browse')
-    .then(r=>r.json())
-    .then(d=>{
-      if(d.path) document.getElementById('folderPath').value = d.path;
-    });
+  checkEngine().then(ok=>{
+    if(!ok){ showEngineModal(); return; }
+    fetch(ENGINE + '/api/browse')
+      .then(r=>r.json())
+      .then(d=>{
+        if(d.path) document.getElementById('folderPath').value = d.path;
+      });
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -620,6 +653,42 @@ function updateUI(){
     input.style.opacity = '1';
   }
 }
+
+// ── 引擎提示弹窗 ──
+const MODAL_STYLE = `
+#engineOverlay{
+  position:fixed;inset:0;z-index:9999;
+  display:none;align-items:center;justify-content:center;
+  background:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+#engineOverlay .modal{
+  width:420px;
+  background:var(--white);
+  border:var(--bw) solid var(--black);
+  box-shadow:var(--shadow) var(--shadow) 0 var(--black);
+  padding:32px 28px;text-align:center;
+  position:relative;
+}
+#engineOverlay h2{font-size:18px;margin-bottom:8px}
+#engineOverlay p{font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+#engineOverlay .btn{margin-bottom:12px;width:100%;text-decoration:none;display:block}
+#engineOverlay .link{font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline}
+`;
+document.head.insertAdjacentHTML('beforeend', `<style>${MODAL_STYLE}</style>`);
+document.body.insertAdjacentHTML('beforeend', `
+<div id="engineOverlay">
+  <div class="modal">
+    <div style="font-size:36px;margin-bottom:12px">&#x2699;</div>
+    <h2>引擎未启动</h2>
+    <p>转换引擎 FinalComic.exe 尚未运行。<br>请双击桌面上的 FinalComic.exe 启动它，<br>然后再回到此页面操作。</p>
+    <button class="btn btn-yellow" id="engineRetryBtn" onclick="retryEngine()" style="width:100%">已启动，重试</button>
+    <a class="btn" onclick="closeEngineModal()" style="width:100%">取消</a>
+  </div>
+</div>
+`);
 </script>
 </body>
 </html>
