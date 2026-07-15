@@ -492,9 +492,12 @@ function toggleBoost(){
 
 function browseFolder(){
   fetch(ENGINE + '/api/browse')
-    .then(r=>r.json())
+    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
     .then(d=>{
       if(d.path) document.getElementById('folderPath').value = d.path;
+    })
+    .catch(e=>{
+      document.getElementById('statusMsg').textContent = '引擎未响应，请确认 FinalComic.exe 已启动';
     });
 }
 
