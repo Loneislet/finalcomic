@@ -267,7 +267,43 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
 .side-card .qr-label{
   font-size:11px;font-weight:700;margin-top:4px;color:var(--muted);
 }
-.side-card .btn{display:block;margin-top:8px}
+.side-card .btn{display:block;margin-top:8px;text-decoration:none}
+
+/* ── 新手教程 ── */
+body.tour-on .section:hover,
+body.tour-on .side-card:hover{
+  transform:none;
+  box-shadow:4px 4px 0 var(--black);
+}
+#tourRoot{
+  position:fixed;inset:0;z-index:9000;
+}
+#tourRoot[hidden]{display:none !important}
+#tourHole{
+  position:absolute;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.62);
+  border:3px solid var(--yellow);
+  border-radius:4px;
+  pointer-events:none;
+  transition:top .22s ease,left .22s ease,width .22s ease,height .22s ease;
+}
+#tourPanel{
+  position:absolute;
+  width:300px;
+  background:var(--white);
+  border:var(--bw) solid var(--black);
+  box-shadow:5px 5px 0 var(--black);
+  padding:16px 18px 14px;
+  z-index:9001;
+}
+.tour-step{
+  font-size:11px;font-weight:800;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px;
+}
+.tour-title{font-size:16px;font-weight:800;margin-bottom:8px}
+.tour-body{font-size:13px;line-height:1.65;font-weight:600;color:#222;margin-bottom:14px}
+.tour-actions{display:flex;justify-content:space-between;gap:10px}
+.tour-actions .btn{flex:1}
 
 /* ── 响应式 ── */
 @media(max-width:560px){
@@ -295,7 +331,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
   <p class="subtitle">漫画格式转换工具</p>
 
   <!-- 路径输入 -->
-  <div class="section">
+  <div class="section" id="secFolder">
     <div class="section-title">[+] 输入文件夹路径</div>
     <div class="path-row">
       <input type="text" id="folderPath" placeholder="粘贴或选择包含 .epub 文件的文件夹...">
@@ -304,7 +340,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
   </div>
 
   <!-- 勾选输出格式 -->
-  <div class="section">
+  <div class="section" id="secFormats">
     <div class="section-title">勾选输出的格式</div>
 
     <div class="check-row">
@@ -337,7 +373,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
     <div class="section-title">设置选项</div>
 
     <!-- 翻页方向 — RTL tag 按钮风格 -->
-    <div class="tag-row" style="margin-bottom:10px">
+    <div class="tag-row" id="rowDirection" style="margin-bottom:10px">
       <span class="tag-label">翻页方向</span>
       <div class="tag-group">
         <button class="tag-btn active" id="tag_ltr" onclick="setRTL(false)">LTR</button>
@@ -346,7 +382,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
     </div>
 
     <!-- 墨色加深 — Dark mode toggle 风格 -->
-    <div class="toggle-row">
+    <div class="toggle-row" id="rowBoost">
       <span class="toggle-label">墨色加深 <span style="font-size:12px;color:var(--muted);font-weight:400">(KFX 有效)</span></span>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="toggle-status" id="boostStatus">ON</span>
@@ -381,9 +417,9 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
   <div class="sidebar">
 
     <!-- 下载入口 -->
-    <div class="side-card">
+    <div class="side-card" id="cardDownload">
       <p>首次使用需要下载一个转换引擎<br>点下方按钮下载</p>
-      <a class="btn btn-yellow" href="https://links.8uid.com/d/4da612150f10a5d263c4a006f128e5a0" target="_blank" style="text-decoration:none">
+      <a class="btn btn-yellow" href="https://links.8uid.com/d/57f616a6877e07fd5ba085d67966ec54" target="_blank">
         下载引擎 (Windows)
       </a>
     </div>
@@ -407,11 +443,139 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-0.5px}
 
 </div><!-- end .page-layout -->
 
+<div id="tourRoot" hidden>
+  <div id="tourHole"></div>
+  <div id="tourPanel">
+    <div class="tour-step" id="tourStep"></div>
+    <div class="tour-title" id="tourTitle"></div>
+    <div class="tour-body" id="tourBody"></div>
+    <div class="tour-actions">
+      <button type="button" class="btn" id="tourSkip">跳过</button>
+      <button type="button" class="btn btn-yellow" id="tourNext">下一步</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // 引擎地址
 // ═══════════════════════════════════════════
 const ENGINE = 'http://127.0.0.1:15900';
+
+const TOUR_KEY = 'fc_tour_done';
+const TOUR_STEPS = [
+  {
+    target: '#cardDownload',
+    title: '先下载并运行引擎',
+    body: '网页只是操作界面，转换要在本机完成。请点右侧黄色按钮下载 Windows 引擎，双击运行 FinalComic.exe，再回到这个页面。Mac 暂时不能使用。'
+  },
+  {
+    target: '#secFolder',
+    title: '导入漫画文件',
+    body: '把要转换的 EPUB 放进同一个文件夹，点「浏览」选中这个文件夹，也可以把路径粘贴到输入框。引擎会处理该文件夹里的全部 .epub 文件。'
+  },
+  {
+    target: '#secFormats',
+    title: '选择输出格式',
+    body: '勾选需要生成的格式即可。EPUB 是源文件，会自动保留。PDF 适合电脑阅读，MOBI 是 Kindle 经典格式，KFX 是 Kindle 最新的固定版式。'
+  },
+  {
+    target: '#rowDirection',
+    title: '翻页方向 LTR / RTL',
+    body: 'LTR 是从左往右翻，适合大多数中文、英文漫画。RTL 是从右往左翻，适合日式漫画的阅读方向。按原作习惯选择即可。'
+  },
+  {
+    target: '#rowBoost',
+    title: '墨色加深',
+    body: '打开后会在生成 KFX 时提高画面对比、让线条更黑，电子墨水屏上更清晰。彩色页或不想改色的书可以关掉。'
+  },
+  {
+    target: '#btnStart',
+    title: '开始转换',
+    body: '引擎已运行、文件夹和格式选好后，点「开始转换」。进度条会显示当前状态，完成后文件会按格式归类到子文件夹。'
+  }
+];
+
+(function startTour(){
+  if(localStorage.getItem(TOUR_KEY)) return;
+  const root = document.getElementById('tourRoot');
+  const hole = document.getElementById('tourHole');
+  const panel = document.getElementById('tourPanel');
+  const stepEl = document.getElementById('tourStep');
+  const titleEl = document.getElementById('tourTitle');
+  const bodyEl = document.getElementById('tourBody');
+  const nextBtn = document.getElementById('tourNext');
+  const skipBtn = document.getElementById('tourSkip');
+  let idx = 0;
+
+  function visible(el){
+    if(!el) return false;
+    const r = el.getBoundingClientRect();
+    const st = window.getComputedStyle(el);
+    return st.display !== 'none' && st.visibility !== 'hidden' && r.width > 0 && r.height > 0;
+  }
+
+  function place(){
+    const step = TOUR_STEPS[idx];
+    const el = document.querySelector(step.target);
+    const pad = 8;
+    if(visible(el)){
+      const r = el.getBoundingClientRect();
+      hole.style.display = 'block';
+      hole.style.top = (r.top - pad)+'px';
+      hole.style.left = (r.left - pad)+'px';
+      hole.style.width = (r.width + pad*2)+'px';
+      hole.style.height = (r.height + pad*2)+'px';
+      const pw = 300, ph = panel.offsetHeight || 180;
+      let left = r.right + 16;
+      let top = r.top;
+      if(left + pw > window.innerWidth - 12){
+        left = r.left - pw - 16;
+      }
+      if(left < 12){
+        left = Math.max(12, (window.innerWidth - pw) / 2);
+        top = r.bottom + 16;
+      }
+      if(top + ph > window.innerHeight - 12){
+        top = Math.max(12, window.innerHeight - ph - 12);
+      }
+      if(top < 12) top = 12;
+      panel.style.left = left+'px';
+      panel.style.top = top+'px';
+    }else{
+      hole.style.display = 'none';
+      panel.style.left = Math.max(12, (window.innerWidth - 300) / 2)+'px';
+      panel.style.top = Math.max(24, window.innerHeight * 0.28)+'px';
+    }
+  }
+
+  function render(){
+    const step = TOUR_STEPS[idx];
+    stepEl.textContent = (idx+1)+' / '+TOUR_STEPS.length;
+    titleEl.textContent = step.title;
+    bodyEl.textContent = step.body;
+    nextBtn.textContent = idx === TOUR_STEPS.length - 1 ? '完成' : '下一步';
+    place();
+  }
+
+  function close(){
+    localStorage.setItem(TOUR_KEY, '1');
+    root.hidden = true;
+    document.body.classList.remove('tour-on');
+    window.removeEventListener('resize', place);
+  }
+
+  document.body.classList.add('tour-on');
+  root.hidden = false;
+  skipBtn.onclick = close;
+  nextBtn.onclick = function(){
+    if(idx >= TOUR_STEPS.length - 1){ close(); return; }
+    idx += 1;
+    render();
+  };
+  window.addEventListener('resize', place);
+  render();
+})();
 
 // ═══════════════════════════════════════════
 // 心跳 — 网页打开时保持引擎活跃
