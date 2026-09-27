@@ -53,11 +53,16 @@ body{
   width:250px;flex-shrink:0;
   display:flex;flex-direction:column;gap:16px;
 }
+#btnReplayTour{
+  width:100%;
+  margin-top:auto;
+  text-decoration:none;
+}
 /* ── 页面左右居中布局 ── */
 .page-layout{
   display:flex;
   justify-content:center;
-  align-items:flex-start;
+  align-items:stretch;
   gap:32px;
   margin-left:141px;
 }
@@ -439,6 +444,8 @@ body.tour-on .side-card:hover{
       </div>
     </div>
 
+    <button type="button" class="btn btn-yellow" id="btnReplayTour">重新开始教程</button>
+
   </div>
 
 </div><!-- end .page-layout -->
@@ -496,8 +503,7 @@ const TOUR_STEPS = [
   }
 ];
 
-(function startTour(){
-  if(localStorage.getItem(TOUR_KEY)) return;
+(function(){
   const root = document.getElementById('tourRoot');
   const hole = document.getElementById('tourHole');
   const panel = document.getElementById('tourPanel');
@@ -506,7 +512,9 @@ const TOUR_STEPS = [
   const bodyEl = document.getElementById('tourBody');
   const nextBtn = document.getElementById('tourNext');
   const skipBtn = document.getElementById('tourSkip');
+  const replayBtn = document.getElementById('btnReplayTour');
   let idx = 0;
+  let bound = false;
 
   function visible(el){
     if(!el) return false;
@@ -558,23 +566,31 @@ const TOUR_STEPS = [
     place();
   }
 
-  function close(){
+  function closeTour(){
     localStorage.setItem(TOUR_KEY, '1');
     root.hidden = true;
     document.body.classList.remove('tour-on');
-    window.removeEventListener('resize', place);
   }
 
-  document.body.classList.add('tour-on');
-  root.hidden = false;
-  skipBtn.onclick = close;
-  nextBtn.onclick = function(){
-    if(idx >= TOUR_STEPS.length - 1){ close(); return; }
-    idx += 1;
+  function openTour(){
+    idx = 0;
+    document.body.classList.add('tour-on');
+    root.hidden = false;
+    if(!bound){
+      skipBtn.onclick = closeTour;
+      nextBtn.onclick = function(){
+        if(idx >= TOUR_STEPS.length - 1){ closeTour(); return; }
+        idx += 1;
+        render();
+      };
+      window.addEventListener('resize', place);
+      bound = true;
+    }
     render();
-  };
-  window.addEventListener('resize', place);
-  render();
+  }
+
+  if(replayBtn) replayBtn.onclick = openTour;
+  if(!localStorage.getItem(TOUR_KEY)) openTour();
 })();
 
 // ═══════════════════════════════════════════
